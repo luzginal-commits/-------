@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Дворовый пенальти</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#101c1a;color:#f2f6ed}*{box-sizing:border-box}body{margin:0;padding:28px 16px}main{max-width:760px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:16px}small,.muted{color:#a9bfb4}h1{font-size:clamp(26px,5vw,42px);margin:4px 0 22px;letter-spacing:-1.5px}.record{text-align:right;white-space:nowrap}.record strong{display:block;font-size:25px;color:#d5f578}.board{background:#1d312b;border:1px solid #3d5145;border-radius:22px;overflow:hidden}.score{padding:18px 22px;display:flex;justify-content:space-between;align-items:center}.dots{display:flex;gap:8px}.dot{width:18px;height:18px;border:2px solid #70857a;border-radius:50%}.dot.goal{background:#d5f578;border-color:#d5f578}.dot.fail{background:#f09d87;border-color:#f09d87}.pitch{height:300px;position:relative;overflow:hidden;background:repeating-linear-gradient(0deg,#2b6445 0px,#2b6445 60px,#306e4c 60px,#306e4c 120px)}.goal-frame{position:absolute;width:70%;height:120px;top:28px;left:15%;border:5px solid #eef5dd;border-bottom-width:2px;background:repeating-linear-gradient(90deg,transparent 0px,transparent 24px,#ffffff25 25px,#ffffff25 26px),repeating-linear-gradient(0deg,transparent 0px,transparent 23px,#ffffff25 24px,#ffffff25 25px);box-shadow:0 12px 24px #102b3255}.line{position:absolute;top:148px;left:7%;width:86%;height:100px;border:2px solid #ffffff60;border-top:0}.keeper{position:absolute;left:50%;top:92px;font-size:47px;transform:translateX(-50%);transition:left .48s ease,transform .48s ease}.ball{position:absolute;left:50%;top:242px;font-size:31px;transform:translateX(-50%);transition:top .55s ease,left .55s ease,scale .55s ease;z-index:2}.controls{padding:20px 22px 24px}.message{font-size:21px;font-weight:700;min-height:30px;margin:0 0 6px}.hint{min-height:44px;margin:0 0 18px;font-size:14px;color:#b6c9bd}.directions{display:flex;gap:10px;margin:12px 0 20px}button{font:inherit;border:1px solid #617464;border-radius:12px;background:#293e33;color:#eef5e7;padding:12px 14px;cursor:pointer;touch-action:manipulation}button:focus-visible{outline:3px solid white;outline-offset:3px}.directions button{flex:1}.directions button.selected{border-color:#d5f578;background:#d5f578;color:#152218;font-weight:700}button:disabled{opacity:.5;cursor:default}.power-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;color:#b6c9bd}.meter{height:17px;border-radius:20px;background:linear-gradient(90deg,#6a8876 0%,#6a8876 54%,#d5f578 54%,#d5f578 83%,#eecc74 83%,#eecc74 92%,#ee8e78 92%);position:relative}.needle{position:absolute;top:-4px;height:25px;width:4px;background:white;box-shadow:0 0 5px #000;border-radius:4px;left:0}.actions{display:flex;gap:10px;margin-top:22px}.shoot{background:#d5f578;color:#152218;border-color:#d5f578;font-weight:800;flex:1}.restart{background:transparent}footer{font-size:13px;color:#a9bfb4;margin-top:18px;line-height:1.6}@media(max-width:480px){.pitch{height:280px}.controls{padding:18px 15px}.directions{gap:6px}.directions button{padding:12px 5px;font-size:14px}.score{padding:16px}.hint{min-height:62px}}
+.keeper{top:62px;width:80px;height:88px;line-height:0;transform-origin:50% 65%;filter:drop-shadow(0 4px 2px #102b3266)}.keeper svg{display:block;width:100%;height:100%}
+</style>
+<style>
+.roles{display:flex;gap:10px;margin:0 0 18px}.roles button{flex:1}.roles button[aria-pressed="true"]{background:#d5f578;color:#152218;border-color:#d5f578;font-weight:700}.striker{position:absolute;left:calc(50% - 40px);top:179px;width:58px;height:88px;transform:translateX(-50%);transition:top .3s ease,transform .3s ease;filter:drop-shadow(0 4px 2px #102b3266)}.striker svg{width:100%;height:100%}.striker.kicking{top:158px;transform:translateX(-50%) rotate(-16deg)}.pitch .ball{top:242px}.role-note{margin:0 0 12px;color:#b6c9bd;font-size:14px}.keeper-mode .meter,.keeper-mode .power-label{display:none}
+</style>
+<style>
+.directions,#shoot{display:none}
+.keeper-mode .goal-frame{cursor:crosshair}.keeper-mode .keeper{pointer-events:none}
+.keeper{transition:left .48s ease,top .48s ease,transform .48s ease}
+body:not(.keeper-mode) .goal-frame{width:56%;left:22%;background-image:linear-gradient(to right,#ffffff40 1px,transparent 1px),linear-gradient(to bottom,#ffffff40 1px,transparent 1px);background-size:calc(100% / 16) 100%,100% 24px}
+body:not(.keeper-mode) .keeper.patrolling{animation:keeper-patrol 2.8s ease-in-out infinite alternate}
+@keyframes keeper-patrol{0%{left:28%;transform:translateX(-50%) rotate(-8deg)}50%{transform:translateX(-50%) translateY(-7px)}100%{left:72%;transform:translateX(-50%) rotate(8deg)}}
+.keeper-mode .keeper{transition:left .25s ease,top .25s ease,transform .25s ease}
+.keeper-mode .ball:disabled{opacity:1;filter:drop-shadow(0 0 5px #fff);transition:left .75s linear,top .75s linear,scale .75s linear}
+.keeper-mode .pitch{height:400px;background:linear-gradient(180deg,#1e4938,#397c50)}
+.keeper-mode .goal-frame{top:235px;left:7%;width:86%;height:140px;border-bottom:5px solid #eef5dd;background:repeating-linear-gradient(90deg,transparent 0px,transparent 24px,#ffffff16 25px,#ffffff16 26px),repeating-linear-gradient(0deg,transparent 0px,transparent 23px,#ffffff16 24px,#ffffff16 25px)}
+.keeper-mode .line{top:145px;left:20%;width:60%;height:230px;border-top:2px solid #ffffff60;border-bottom:0;transform:perspective(220px) rotateX(22deg);transform-origin:top}
+.keeper-mode .striker{top:23px;left:50%;transform:translateX(-50%) scale(.78);transform-origin:bottom center}
+.keeper-mode .striker.kicking{top:36px;transform:translateX(-50%) scale(.78) rotate(-18deg)}
+.keeper-mode .pitch .ball{top:99px;scale:.55;z-index:5}
+.keeper-mode .keeper{top:284px;z-index:4}
+.camera-label{display:none;position:absolute;top:12px;left:14px;color:#dcebdc;font-size:12px;letter-spacing:1px}.keeper-mode .camera-label{display:block}
+.jump-target,.ball-impact{position:absolute;width:22px;height:22px;border:3px solid #d5f578;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:4;box-shadow:0 0 0 5px #d5f57833}.ball-impact{border-color:#fff;box-shadow:0 0 0 5px #ffffff33}
+.pitch .ball{border:0;background:transparent;padding:0;width:48px;height:48px;line-height:48px;cursor:grab;touch-action:none;user-select:none}
+.pitch .ball:active{cursor:grabbing}.keeper-mode .ball{cursor:default}
+.joystick{position:fixed;width:192px;height:192px;border:2px solid #ffffff80;background:#ffffff12;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:10}
+.joystick-knob{position:absolute;left:50%;top:50%;width:42px;height:42px;margin:-21px;border-radius:50%;background:#d5f578cc;border:2px solid white;box-shadow:0 3px 12px #0005}
+.aim{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:3;filter:drop-shadow(0 2px 3px #102b32)}.aim line{stroke:#d5f578;stroke-width:4;stroke-linecap:round;marker-end:url(#aim-arrowhead)}.aim circle{fill:#d5f57833;stroke:#d5f578;stroke-width:2}[hidden]{display:none!important}
+</style>
+ </head>
+<body>
+<main>
+<header><div><small>ПЯТЬ УДАРОВ. ОДИН ДВОР.</small><h1>Дворовый пенальти</h1></div><div class="record"><small>Рекорд</small><strong id="record">0 / 5</strong></div></header>
+<div class="roles" aria-label="Выбор роли"><button data-role="striker" aria-pressed="true">⚽ Играть за бьющего</button><button data-role="keeper" aria-pressed="false">🧤 Играть за вратаря</button></div>
+<p class="role-note" id="role-note">Ты бьёшь по воротам. Забей как можно больше голов!</p>
+<section class="board" aria-label="Игра">
+<div class="score"><strong id="score">Голы: 0 / 5</strong><div class="dots" id="dots" aria-label="Результаты ударов"></div></div>
+<div class="pitch" id="pitch"><span class="camera-label">ВИД ИЗ ВОРОТ</span><div class="goal-frame"></div><div class="line"></div><div class="keeper" id="keeper">
+<svg viewBox="0 0 80 88" xmlns="http://www.w3.org/2000/svg">
+<ellipse cx="40" cy="84" rx="24" ry="3" fill="#102b32" opacity=".25"/>
+<g stroke-linecap="round" stroke-linejoin="round">
+<path d="M33 58 27 73 21 80 M47 58 53 73 59 80" fill="none" stroke="#f2bb88" stroke-width="9"/>
+<path d="m30 65 4-13h12l4 13" fill="#172b3e" stroke="#172b3e" stroke-width="7"/>
+<path d="m27 31-12 9-7-13 M53 31l12 9 7-13" fill="none" stroke="#f4bb42" stroke-width="10"/>
+<path d="m8 27-2-8 M72 27l2-8" fill="none" stroke="#f3f7ed" stroke-width="11"/>
+<path d="M28 28q12-5 24 0l-3 27H31Z" fill="#f4bb42" stroke="#c98b24" stroke-width="2"/>
+<path d="M37 30h6v5h-6z" fill="#f8e3af"/>
+<path d="M40 40v9" stroke="#253d35" stroke-width="3"/>
+<path d="M40 21v7" stroke="#e7a577" stroke-width="8"/>
+<circle cx="40" cy="14" r="10" fill="#f2bb88"/>
+<path d="M30 13q-2-13 10-12 12 0 10 12l-5-6-14 5" fill="#322a27"/>
+<path d="M36 15h.1 M44 15h.1" stroke="#322a27" stroke-width="2"/>
+<path d="M37 20q3 2 6 0" fill="none" stroke="#a5674c" stroke-width="1.5"/>
+<path d="m21 79-7 3h12 M59 79l7 3H54" fill="none" stroke="#142838" stroke-width="7"/>
+</g></svg>
+</div>
+<div class="striker" id="striker">
+<svg viewBox="0 0 64 96" xmlns="http://www.w3.org/2000/svg"><g stroke-linecap="round" stroke-linejoin="round">
+<path d="m25 61-6 20-7 7 M39 61l7 12-4 15" fill="none" stroke="#efb78b" stroke-width="9"/>
+<path d="m24 55-3 12 M40 55l3 12" stroke="#182a46" stroke-width="12"/>
+<path d="m21 31-9 14-5 9 M43 31l10 13 5-6" fill="none" stroke="#efb78b" stroke-width="7"/>
+<path d="m21 28-6 9 M43 28l6 9" stroke="#72baff" stroke-width="11"/>
+<path d="M21 27q11-5 22 0l-2 30H23Z" fill="#4094e5" stroke="#2258a1" stroke-width="2"/>
+<path d="M32 21v6" stroke="#efb78b" stroke-width="8"/><circle cx="32" cy="14" r="10" fill="#efb78b"/>
+<path d="M22 14Q19 1 32 2q13-1 10 12l-5-6-14 5" fill="#302a28"/>
+<path d="M28 15h.1 M36 15h.1" stroke="#302a28" stroke-width="2"/>
+<path d="M29 37h7l-5 12" fill="none" stroke="white" stroke-width="3"/>
+<path d="m12 88-6 3h11 M42 88l7 3H38" stroke="#152435" stroke-width="7"/>
+</g></svg></div>
+<svg class="aim" id="aim" hidden aria-hidden="true"><defs><marker id="aim-arrowhead" viewBox="0 0 14 14" refX="12" refY="7" markerWidth="7" markerHeight="7" orient="auto"><path d="M1 1 13 7 1 13 4 7Z" fill="#d5f578"/></marker></defs><circle id="aim-target" r="12"/><line id="aim-line"/></svg>
+<button class="ball" id="ball" aria-label="Оттяни мяч вниз и отпусти для удара">⚽</button></div>
+<div class="controls">
+<p class="message" id="message" role="status" aria-live="polite">Твой первый удар</p>
+<p class="hint" id="hint">Нажми на мяч, оттяни вниз и отпусти для удара.</p>
+<div class="power-label"><span>Сила удара</span><span id="power">0%</span></div>
+<div class="meter"><div class="needle" id="needle"></div></div>
+<div class="actions"><button class="shoot" id="shoot">Ударить · Пробел</button><button class="restart" id="restart">Заново</button></div>
+</div></section>
+<footer>Клавиши ← → выбирают направление, пробел — удар. Вратарь замечает, куда ты бьёшь чаще. Сильный точный удар иногда пробивает даже угаданный угол.</footer>
+</main>
+<div class="joystick" id="joystick" hidden aria-hidden="true"><div class="joystick-knob" id="joystick-knob"></div></div>
+<script>
+
+// Автономная игровая логика: Python-сервер для этой версии не нужен.
+function browserShot(role,direction,power,history){
+ if(role==='keeper'){
+  const corner=Math.random()<.75;
+  const shotX=corner?(Math.random()<.5?.12:.72)+Math.random()*.16:.12+Math.random()*.76;
+  const shotY=corner?(Math.random()<.5?.24:.64)+Math.random()*.12:.24+Math.random()*.52;
+  return {keeper:direction,shotX,shotY,outcome:'goal'};
+ }
+ const weights=[1,1,1];
+ [...history].reverse().forEach((previous,age)=>weights[previous]+=2.4/(age+1));
+ const n=history.length;
+ if(n>=2&&history[n-1]===history[n-2])weights[history[n-1]]+=4;
+ else if(n>=3&&history[n-1]===history[n-3])weights[history[n-2]]+=5;
+ let draw=Math.random()*weights.reduce((sum,w)=>sum+w,0),keeper=2;
+ for(let i=0;i<3;i++){draw-=weights[i];if(draw<0){keeper=i;break;}}
+ if(power<=45)return {keeper:direction,outcome:'save'};
+ if(power>92)return {keeper,outcome:'miss'};
+ const reaction=Math.max(.08,.6-(power-46)*.011);
+ if(keeper!==direction&&Math.random()<reaction)keeper=direction;
+ const chance=power<72?1:Math.max(.58,.86-(power-72)*.012);
+ return {keeper,outcome:keeper===direction&&Math.random()<chance?'save':'goal'};
+}
+const $=id=>document.getElementById(id);
+const buttons=[...document.querySelectorAll('[data-dir]')];
+const roles=[...document.querySelectorAll('[data-role]')];
+let role='striker',direction=1,history=[],results=[],goals=0,busy=false,power=0,best=0,targetX=50,drag=null,keeperTarget=null,keeperFlying=false,keeperTimer=null,keeperJump=null;
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+const recordKey=()=>role==='keeper'?'penalty-best-keeper':'penalty-best';
+const scoreLabel=()=>role==='keeper'?'Отбито':'Голы';
+function loadRecord(){best=0;try{best=Math.min(5,Math.max(0,Number(localStorage.getItem(recordKey()))||0));}catch{}$('record').textContent=`${best} / 5`;}
+function choose(value){if(busy||history.length===5)return;direction=value;buttons.forEach((b,i)=>{b.classList.toggle('selected',i===value);b.setAttribute('aria-pressed',String(i===value));});}
+buttons.forEach(b=>b.addEventListener('click',()=>choose(Number(b.dataset.dir))));
+function drawDots(){ $('dots').replaceChildren(...Array.from({length:5},(_,i)=>{const d=document.createElement('span');d.className='dot'+(results[i]===undefined?'':results[i]?' goal':' fail');return d;}));}
+function showPower(){ $('needle').style.left=`calc(${power}% - ${power*.04}px)`;$('power').textContent=power+'%'; }
+function cancelDrag(){const current=drag;drag=null;$('joystick').hidden=true;$('aim').setAttribute('hidden','');if(current&&$('ball').hasPointerCapture(current.id))$('ball').releasePointerCapture(current.id);}
+function resetPositions(){cancelDrag();if(keeperJump){keeperJump.onfinish=null;keeperJump.cancel();keeperJump=null;}keeperTarget=null;document.querySelector('.jump-target')?.remove();document.querySelector('.ball-impact')?.remove();power=0;showPower();$('ball').style.cssText='';$('keeper').style.cssText='';$('striker').classList.remove('kicking');}
+function setDisabled(value){$('restart').disabled=value;roles.forEach(b=>b.disabled=value);buttons.forEach(b=>b.disabled=value||history.length>=5);$('shoot').disabled=value||history.length>=5;$('ball').disabled=value||history.length>=5||role==='keeper';$('keeper').classList.toggle('patrolling',!value&&role==='striker'&&history.length<5);}
+function stopKeeperPatrol(){
+ if(role!=='striker')return;
+ const style=getComputedStyle($('keeper')),left=style.left,transform=style.transform;
+ $('keeper').classList.remove('patrolling');$('keeper').style.left=left;$('keeper').style.transform=transform;
+}
+function reset(){
+ if(busy)return;
+ clearTimeout(keeperTimer);keeperFlying=false;
+ history=[];results=[];goals=0;resetPositions();drawDots();
+ document.body.classList.toggle('keeper-mode',role==='keeper');
+ $('score').textContent=`${scoreLabel()}: 0 / 5`;
+ $('message').textContent=role==='keeper'?'Ты в воротах!':'Твой первый удар';
+ $('hint').textContent=role==='keeper'?'Соперник скоро ударит. Следи за мячом и нажми на точку в воротах, пока он летит. Один прыжок на удар!':'Нажми на мяч и оттяни вниз: вниз-вправо — удар влево, вниз-влево — вправо. Отпусти для удара!';
+ $('role-note').textContent=role==='keeper'?'Вид из ворот: соперник в синем перед тобой, вратарь в жёлтом — у ближних ворот. Смотри, как мяч летит к тебе.':'Ты управляешь бьющим в синем. Забей как можно больше голов!';
+ $('shoot').textContent=role==='keeper'?'Отбить · Пробел':'Ударить · Пробел';
+ document.querySelector('footer').textContent=role==='keeper'?'Соперник бьёт автоматически. Во время полёта мяча нажми мышью или пальцем на точку в воротах. На реакцию — 0,75 секунды, на каждый удар — один прыжок. Пять попыток.':'Мышью или пальцем оттяни джойстик от мяча, как рогатку. Стрелка показывает направление полёта мяча. Чем дальше тянешь, тем сильнее удар; красная зона — перелёт. Escape отменяет оттяжку.';
+ roles.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===role)));
+ setDisabled(false);choose(1);loadRecord();targetX=50;
+ scheduleKeeper();
+}
+function scheduleKeeper(){clearTimeout(keeperTimer);if(role==='keeper'&&history.length<5)keeperTimer=setTimeout(()=>{if(role==='keeper'&&!busy)shoot();},1400);}
+function keeperLanding(goalRect,pitchRect,x,y){
+ const padding=33;
+ const px=Math.max(padding,Math.min(goalRect.width-padding,x*goalRect.width));
+ const py=Math.max(padding,Math.min(goalRect.height-padding,y*goalRect.height));
+ return {left:goalRect.left-pitchRect.left+px,top:goalRect.top-pitchRect.top+py-24,x:px/goalRect.width,y:py/goalRect.height};
+}
+async function flyIntoGoal(result){
+ const ball=$('ball'),goal=document.querySelector('.goal-frame'),pitch=$('pitch');
+ const corner=Math.random()<.75;
+ const fallbackX=corner?(Math.random()<.5?.12:.72)+Math.random()*.16:.12+Math.random()*.76;
+ const fallbackY=corner?(Math.random()<.5?.24:.64)+Math.random()*.12:.24+Math.random()*.52;
+ const x=Number.isFinite(result.shotX)?result.shotX:fallbackX;
+ const y=Number.isFinite(result.shotY)?result.shotY:fallbackY;
+ const landing=keeperLanding(goal.getBoundingClientRect(),pitch.getBoundingClientRect(),x,y);
+ result.shotX=landing.x;result.shotY=landing.y;
+ await animateBallFlight(landing.left,landing.top,1.15,750,Math.min(85,Math.abs(landing.top-ball.offsetTop)*.45+25),.55);
+}
+async function animateBallFlight(toX,toY,toScale,duration,arcHeight,fromScale=1){
+ const ball=$('ball');ball.style.transition='none';
+ const end={left:toX+'px',top:toY+'px',scale:String(toScale)};
+ const fromX=ball.offsetLeft,fromY=ball.offsetTop;
+ const frames=Array.from({length:31},(_,i)=>{
+  const t=i/30;
+  return {offset:t,left:(fromX+(toX-fromX)*t)+'px',
+   top:(fromY+(toY-fromY)*t-4*arcHeight*t*(1-t))+'px',scale:String(fromScale+(toScale-fromScale)*t)};
+ });
+ const animation=ball.animate(frames,{duration,easing:'linear',fill:'forwards'});
+ await animation.finished;
+ Object.assign(ball.style,end);animation.cancel();
+}
+roles.forEach(b=>b.addEventListener('click',()=>{if(!busy&&role!==b.dataset.role){role=b.dataset.role;reset();}}));
+async function shoot(){
+ if(busy||history.length>=5||(role==='striker'&&power<12))return;
+ stopKeeperPatrol();busy=true;setDisabled(true);
+ let completed=false;
+ try{
+  const result=browserShot(role,direction,power,history);
+  const weakCatch=role==='striker'&&power<=45;
+  if(weakCatch){result.outcome='save';result.keeper=direction;}
+  $('message').textContent=role==='keeper'?'Соперник разбегается…':'Разбег…';
+  $('striker').classList.add('kicking');await wait(350);
+  if(weakCatch){
+   jumpKeeper($('pitch').clientWidth*targetX/100,126,550);
+  }else if(role==='striker'){
+   $('keeper').style.left=(result.outcome==='save'?targetX:[28,50,72][result.keeper])+'%';
+   $('keeper').style.top=result.keeper===1?'56px':'49px';
+   $('keeper').style.transform=`translateX(-50%) rotate(${[-55,0,55][result.keeper]}deg)`;
+  }
+  const goal=document.querySelector('.goal-frame'),pitch=$('pitch');
+  if(role==='keeper'){keeperFlying=true;$('message').textContent='Мяч летит — прыгай!';$('hint').textContent='Нажми в воротах туда, куда летит мяч.';}
+  if(role==='keeper')await flyIntoGoal(result);
+  else{
+   await animateBallFlight(pitch.clientWidth*targetX/100,result.outcome==='miss'?-35:102,.65,power<=45?900:650,result.outcome==='miss'?25:55);
+  }
+  keeperFlying=false;
+  if(role==='keeper'){
+   const caught=keeperTarget&&((keeperTarget.x-result.shotX)/.23)**2+((keeperTarget.y-result.shotY)/.35)**2<=1;
+   result.outcome=caught?'save':'goal';
+  }
+  const success=role==='keeper'?result.outcome==='save':result.outcome==='goal';
+  history.push(direction);results.push(success);if(success)goals++;
+  if(result.outcome==='save'&&!weakCatch){
+   $('ball').style.transition='top .4s ease,scale .4s ease';
+   $('ball').style.top=role==='keeper'?(goal.offsetTop-65)+'px':power<=45?'99px':'173px';$('ball').style.scale=role==='striker'&&power<=45?'.65':'.85';
+  }else if(role==='keeper'&&result.outcome==='goal'){
+   const landing=document.createElement('div');landing.className='ball-impact';landing.style.left=(goal.offsetLeft+result.shotX*goal.offsetWidth)+'px';landing.style.top=(goal.offsetTop+result.shotY*goal.offsetHeight)+'px';$('pitch').append(landing);
+  }
+  drawDots();$('score').textContent=`${scoreLabel()}: ${goals} / 5`;
+  if(role==='keeper'){
+   $('message').textContent=result.outcome==='save'?'Отличный сейв!':'Гол в твои ворота!';
+   $('hint').textContent=result.outcome==='save'?'Ты среагировал и отбил мяч!':keeperTarget?'Следи за направлением и высотой мяча.':'Ты не прыгнул. Нажимай на ворота, пока мяч летит!';
+  }else{
+   $('message').textContent=success?'Го-о-ол!':result.outcome==='save'?'Вратарь тащит!':'Выше ворот!';
+   $('hint').textContent=result.outcome==='miss'?'Перебор с силой. Оттяни джойстик поменьше.':result.outcome==='save'?(power<=45?'Слишком слабо! Удары с силой 45% и меньше вратарь всегда ловит. Оттяни джойстик сильнее.':'Вратарь угадал направление. Попробуй другой угол или более сильный удар.'):'Отличный удар! Продолжай серию.';
+  }
+  if(history.length===5){
+   $('message').textContent=`Серия окончена. ${scoreLabel()}: ${goals} из 5`;
+   $('hint').textContent=goals===5?'Идеальная серия! Двор наш.':goals>=3?'Хорошая серия! Сыграем ещё?':'Разомнись и попробуй ещё раз!';
+   if(goals>best){best=goals;$('record').textContent=`${best} / 5`;try{localStorage.setItem(recordKey(),String(best));}catch{}$('hint').textContent+=' Новый рекорд!';}
+   $('shoot').textContent='Серия завершена';
+  }else{await wait(1000);resetPositions();}
+  completed=true;
+ }catch{resetPositions();$('message').textContent='Не удалось выполнить удар';$('hint').textContent='Обнови страницу и попробуй снова.';}
+ finally{keeperFlying=false;busy=false;setDisabled(false);if(completed)scheduleKeeper();}
+}
+$('shoot').addEventListener('click',shoot);
+$('restart').addEventListener('click',reset);
+function jumpKeeper(x,y,duration=380){
+ const keeper=$('keeper'),fromX=keeper.offsetLeft,fromY=keeper.offsetTop+keeper.offsetHeight/2;
+ const dx=x-fromX,angle=Math.abs(dx)<18?0:Math.sign(dx)*68;
+ keeper.style.transition='none';keeper.style.transformOrigin='50% 50%';
+ const pose=(px,py,rotation,sx=1,sy=1)=>({left:px+'px',top:py+'px',transform:`translate(-50%,-50%) rotate(${rotation}deg) scale(${sx},${sy})`});
+ const end=pose(x,y,angle,1,1.08);
+ keeperJump=keeper.animate([
+  {...pose(fromX,fromY,0),offset:0},
+  {...pose(fromX+dx*.06,fromY+5,angle*.08,1.08,.85),offset:.12},
+  {...pose(fromX+dx*.56,Math.min(fromY,y)-30,angle*.8,.96,1.12),offset:.58},
+  {...end,offset:1}
+ ],{duration,easing:'cubic-bezier(.18,.7,.3,1)',fill:'forwards'});
+ keeperJump.onfinish=()=>{const animation=keeperJump;Object.assign(keeper.style,end);keeperJump=null;animation.cancel();};
+}
+$('pitch').addEventListener('click',event=>{
+ if(role!=='keeper'||!keeperFlying||keeperTarget||history.length>=5)return;
+ const goal=document.querySelector('.goal-frame'),rect=goal.getBoundingClientRect();
+ if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)return;
+ keeperTarget={x:(event.clientX-rect.left)/rect.width,y:(event.clientY-rect.top)/rect.height};
+ direction=keeperTarget.x<1/3?0:keeperTarget.x>2/3?2:1;
+ const x=goal.offsetLeft+keeperTarget.x*goal.offsetWidth,y=goal.offsetTop+keeperTarget.y*goal.offsetHeight;
+ const marker=document.createElement('div');marker.className='jump-target';marker.style.left=x+'px';marker.style.top=y+'px';$('pitch').append(marker);
+ jumpKeeper(x,y);
+});
+function dragValues(dx,dy,width,height,ballY){
+ const length=Math.hypot(dx,dy),ratio=Math.min(1,96/(length||1));
+ const x=dx*ratio,y=dy*ratio;
+ const target=Math.max(28,Math.min(72,50-(dx/Math.max(12,dy))*(ballY-126)/width*100));
+ return {x,y,power:Math.round(Math.min(100,length/96*100)),target,direction:target<39?0:target>61?2:1,valid:dy>=10&&length>=12};
+}
+function drawAim(){
+ if(!drag)return;
+ $('aim').removeAttribute('hidden');
+ const line=$('aim-line');line.setAttribute('x1',drag.width/2);line.setAttribute('y1',drag.ballY-20);line.setAttribute('x2',targetX/100*drag.width);line.setAttribute('y2',126);
+ $('aim-target').setAttribute('cx',targetX/100*drag.width);$('aim-target').setAttribute('cy',126);
+}
+$('ball').addEventListener('pointerdown',event=>{
+ if(role!=='striker'||busy||history.length>=5||event.button!==0||drag)return;
+ event.preventDefault();const rect=$('ball').getBoundingClientRect(),pitch=$('pitch').getBoundingClientRect();
+ drag={id:event.pointerId,x:event.clientX,y:event.clientY,width:pitch.width,height:pitch.height,ballY:rect.top+rect.height/2-pitch.top,valid:false};
+ $('ball').setPointerCapture(event.pointerId);power=0;showPower();
+ $('joystick').style.left=event.clientX+'px';$('joystick').style.top=event.clientY+'px';$('joystick-knob').style.transform='';$('joystick').hidden=false;
+ targetX=50;drawAim();
+});
+$('ball').addEventListener('pointermove',event=>{
+ if(!drag||drag.id!==event.pointerId)return;
+ const value=dragValues(event.clientX-drag.x,event.clientY-drag.y,drag.width,drag.height,drag.ballY);
+ drag.valid=value.valid;power=value.power;targetX=value.target;direction=value.direction;showPower();
+ $('joystick-knob').style.transform=`translate(${value.x}px,${value.y}px)`;
+ drawAim();
+});
+$('ball').addEventListener('pointerup',event=>{if(!drag||drag.id!==event.pointerId)return;const valid=drag.valid;cancelDrag();if(valid)shoot();else{power=0;showPower();}});
+for(const name of ['pointercancel','lostpointercapture'])$('ball').addEventListener(name,()=>{if(drag){cancelDrag();power=0;showPower();}});
+window.addEventListener('blur',()=>{cancelDrag();if(!busy){power=0;showPower();}});
+window.addEventListener('resize',()=>{cancelDrag();if(!busy){power=0;showPower();}});
+document.addEventListener('keydown',event=>{if(event.code==='Escape'){cancelDrag();if(!busy){power=0;showPower();}}});
+reset();
+</script>
+</body>
+</html>
