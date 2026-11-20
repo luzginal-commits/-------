@@ -1,6 +1,8 @@
 """Собрать автономную версию для GitHub Pages: python build_pages.py."""
 
 from pathlib import Path
+import base64
+import re
 
 ROOT = Path(__file__).resolve().parent
 
@@ -32,21 +34,30 @@ function browserShot(role,direction,power,history){
 
 def build():
     source = (ROOT / "index.html").read_text(encoding="utf-8")
-    start = source.index("  const response=await fetch('/shot'")
-    end = source.index("  const weakCatch=", start)
-    source = source[:start] + "  const result=browserShot(role,direction,power,history);\n" + source[end:]
-    source = source.replace("<script>\n", "<script>\n" + BROWSER_RULES, 1)
+    if "  const response=await fetch('/shot'" in source:
+        start = source.index("  const response=await fetch('/shot'")
+        end = source.index("  const weakCatch=", start)
+        source = source[:start] + "  const result=browserShot(role,direction,power,history);\n" + source[end:]
+        source = source.replace("<script>\n", "<script>\n" + BROWSER_RULES, 1)
+    elif "function browserShot(" not in source:
+        raise ValueError("Не найдена игровая логика для автономной версии")
     source = source.replace(
         "Проверь, что python app.py запущен, и попробуй снова.",
         "Обнови страницу и попробуй снова.",
     )
     if "fetch(" in source:
         raise ValueError("В автономной версии остался запрос к серверу")
-    destination = ROOT / "github-pages"
-    destination.mkdir(exist_ok=True)
-    (destination / "index.html").write_text(source, encoding="utf-8")
-    (destination / ".nojekyll").write_text("", encoding="utf-8")
-    print(f"GitHub Pages: {destination / 'index.html'}")
+    for name in ("aim-map.png", "aim-head.png", "aim-reward-photo.png"):
+        asset = ROOT / "assets" / name
+        image_id = name.removesuffix(".png")
+        image_data = "data:image/png;base64," + base64.b64encode(asset.read_bytes()).decode("ascii")
+        pattern = rf'(<img id="{image_id}"[^>]*\bsrc=")[^"]*(")'
+        source, count = re.subn(pattern, lambda match: match[1] + image_data + match[2], source)
+        if count != 1:
+            raise ValueError(f"Не найдено изображение {image_id}")
+    # Один автономный файл для локальной игры и публикации.
+    (ROOT / "index.html").write_text(source, encoding="utf-8")
+    print(f"Ready: {ROOT / 'index.html'}")
 
 
 if __name__ == "__main__":
