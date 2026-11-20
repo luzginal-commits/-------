@@ -88,6 +88,29 @@ body:not(.keeper-mode) .keeper.patrolling{animation:keeper-patrol 2.8s ease-in-o
 </main>
 <div class="joystick" id="joystick" hidden aria-hidden="true"><div class="joystick-knob" id="joystick-knob"></div></div>
 <script>
+
+// Автономная игровая логика: Python-сервер для этой версии не нужен.
+function browserShot(role,direction,power,history){
+ if(role==='keeper'){
+  const corner=Math.random()<.75;
+  const shotX=corner?(Math.random()<.5?.12:.72)+Math.random()*.16:.12+Math.random()*.76;
+  const shotY=corner?(Math.random()<.5?.24:.64)+Math.random()*.12:.24+Math.random()*.52;
+  return {keeper:direction,shotX,shotY,outcome:'goal'};
+ }
+ const weights=[1,1,1];
+ [...history].reverse().forEach((previous,age)=>weights[previous]+=2.4/(age+1));
+ const n=history.length;
+ if(n>=2&&history[n-1]===history[n-2])weights[history[n-1]]+=4;
+ else if(n>=3&&history[n-1]===history[n-3])weights[history[n-2]]+=5;
+ let draw=Math.random()*weights.reduce((sum,w)=>sum+w,0),keeper=2;
+ for(let i=0;i<3;i++){draw-=weights[i];if(draw<0){keeper=i;break;}}
+ if(power<=45)return {keeper:direction,outcome:'save'};
+ if(power>92)return {keeper,outcome:'miss'};
+ const reaction=Math.max(.08,.6-(power-46)*.011);
+ if(keeper!==direction&&Math.random()<reaction)keeper=direction;
+ const chance=power<72?1:Math.max(.58,.86-(power-72)*.012);
+ return {keeper,outcome:keeper===direction&&Math.random()<chance?'save':'goal'};
+}
 const $=id=>document.getElementById(id);
 const buttons=[...document.querySelectorAll('[data-dir]')];
 const roles=[...document.querySelectorAll('[data-role]')];
@@ -160,9 +183,7 @@ async function shoot(){
  stopKeeperPatrol();busy=true;setDisabled(true);
  let completed=false;
  try{
-  const response=await fetch('/shot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({role,direction,power,history,keeperTarget:role==='keeper'?{x:.5,y:.5}:null})});
-  if(!response.ok)throw new Error('server');
-  const result=await response.json();
+  const result=browserShot(role,direction,power,history);
   const weakCatch=role==='striker'&&power<=45;
   if(weakCatch){result.outcome='save';result.keeper=direction;}
   $('message').textContent=role==='keeper'?'Соперник разбегается…':'Разбег…';
@@ -208,7 +229,7 @@ async function shoot(){
    $('shoot').textContent='Серия завершена';
   }else{await wait(1000);resetPositions();}
   completed=true;
- }catch{resetPositions();$('message').textContent='Не удалось выполнить удар';$('hint').textContent='Проверь, что python app.py запущен, и попробуй снова.';}
+ }catch{resetPositions();$('message').textContent='Не удалось выполнить удар';$('hint').textContent='Обнови страницу и попробуй снова.';}
  finally{keeperFlying=false;busy=false;setDisabled(false);if(completed)scheduleKeeper();}
 }
 $('shoot').addEventListener('click',shoot);
